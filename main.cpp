@@ -1,5 +1,4 @@
 #include "decision_tree.h"
-#include <cstdio>
 
 int main() {
 	DecisionTree tree;
