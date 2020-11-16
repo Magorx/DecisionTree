@@ -143,11 +143,6 @@ DecisionTreeNode *DecisionTree::load_node(File *file) {
 		return nullptr;
 	}
 
-	if (*c != SYMB_QUOTE) {
-		printf("Invalid input file\n");
-		return nullptr;
-	}
-
 	++c;
 	String *node_statement = new String();
 	c += node_statement->read(c, false, '"');
@@ -313,11 +308,10 @@ DecisionTreeNode* DecisionTree::merge_node(DecisionTreeNode *first, DecisionTree
 int DecisionTree::run_new_node_generation(DecisionTreeNode *cur_node, DecisionTreeNode* prev_node, const int prev_ans) {
 	printf("Well, okay...\n");
 	printf("What is your object?\n> ");
-	
+
 	char str[MAX_STATEMENT_LEN];
 	scanf ("%[^\n]%*c", str);
 	String *definition = new String(str);
-	(*definition)[definition->length() - 1] = '\0';
 	DecisionTreeNode *new_defenition_node = new DecisionTreeNode(new DecisionDefinition(definition));
 
 	printf("\nAnd how is [");
@@ -328,7 +322,6 @@ int DecisionTree::run_new_node_generation(DecisionTreeNode *cur_node, DecisionTr
 
 	scanf ("%[^\n]%*c", str);
 	String *question = new String(str);
-	(*question)[question->length() - 1] = '\0';
 	DecisionTreeNode *new_question_node = new DecisionTreeNode(new DecisionQuestion(question));
 	new_question_node->set_true (new_defenition_node);
 	new_question_node->set_false(cur_node);
@@ -427,10 +420,16 @@ void DecisionTree::print_prefixed_statement(const String &statement, const bool 
 void DecisionTree::print_definition_by_way(const Vector<char> &way, const int min_depth, const int max_depth) const {
 	DecisionTreeNode *node = root;
 
-	size_t way_size = way.size();
+	size_t way_size = 0;
+	if (max_depth >= 0) {
+		way_size = std::min((int) way.size(), max_depth);
+	} else {
+		way_size = way.size();
+	}
+
 	int definitions_printed = 0;
 	for (size_t i = 0; i < way_size - 1; ++i) {
-		if ((int) i >= min_depth && (max_depth < 0 || (int) i < max_depth)) {
+		if ((int) i >= min_depth) {
 			++definitions_printed;
 			print_prefixed_statement(node->get_statement(), way[i]);
 			printf(", ");
@@ -443,11 +442,7 @@ void DecisionTree::print_definition_by_way(const Vector<char> &way, const int mi
 		}
 	}
 
-	if (max_depth < 0) {
-		print_prefixed_statement(node->get_statement(), way[way_size - 1]);
-	} else {
-		print_prefixed_statement(node->get_statement(), way[std::min((int) way_size - 1, max_depth)]);
-	}
+	print_prefixed_statement(node->get_statement(), way[way_size - 1]);
 }
 
 int DecisionTree::print_definition(const String &definition) {
@@ -524,7 +519,7 @@ int DecisionTree::run_difference() {
 	} else {
 		first.print();
 		printf(" ");
-		print_definition_by_way(*way_first, 0, common_part + 1);
+		print_definition_by_way(*way_first, 0, common_part);
 		printf(" and so is ");
 		second.print();
 
@@ -535,7 +530,7 @@ int DecisionTree::run_difference() {
 	printf(" ");
 	print_definition_by_way(*way_first, common_part);
 
-	printf("\nWhile\n");
+	printf("\n~While~\n");
 
 	second.print();
 	printf(" ");

@@ -70,7 +70,7 @@ public:
 		}
 	}
 
-	int  read(const unsigned char *c_string, const bool stop_on_space = true, const char ending_char = '\0') {
+	int read(const unsigned char *c_string, const bool stop_on_space = true, const char ending_char = '\0') {
 		if (c_string == nullptr) {
 			return -1;
 		}

@@ -13,7 +13,7 @@ public:
 	virtual int  state(char *end = (char*) "") = 0;
 	virtual int  size() = 0;
 	//virtual bool operator==(const AbstractDecisionStatement &other) const = 0;
-	virtual void dump(FILE *file_ptr = nullptr) const = 0;
+	virtual void dump(FILE *file_ptr = stdout) const = 0;
 };
 
 class DecisionAbstractQuestion : public AbstractDecisionStatement {
@@ -35,7 +35,7 @@ public:
 	String &get_statement() const;
 	bool operator==(const AbstractDecisionStatement &other) const;
 	bool operator==(const DecisionStatement &other) const;
-	void dump(FILE *file_ptr = nullptr) const;
+	void dump(FILE *file_ptr = stdout) const;
 };
 
 class DecisionDefinition : public DecisionStatement {
@@ -81,7 +81,7 @@ public:
 	int statement_length();
 
 	int state();
-	void dump(FILE *file_ptr = nullptr) const;
+	void dump(FILE *file_ptr = stdout) const;
 
 	DecisionTreeNode *proceed(const int answer);
 };
@@ -138,7 +138,7 @@ public:
 
 	int run_interaction();
 
-	void dump(FILE *file_ptr = nullptr) const;
+	void dump(FILE *file_ptr = stdout) const;
 
 	void merge(const DecisionTree &tree);
 };
