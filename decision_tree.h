@@ -12,6 +12,7 @@ const char SYMB_CLOSE_NODE = ']';
 const char SYMB_QUOTE      = '"';
 
 const int MAX_STATEMENT_LEN = 50;
+const double OVERLOAD_COEF = 0.05;
 
 enum GUESS_GAME_OUTCOMES {
 	GUESS     = 2,
@@ -214,8 +215,13 @@ private:
 	DecisionTreeNode *root;
 	File *db_file;
 	bool festival_verbosity;
+	int cur_node_cnt;
+	int new_node_cnt;
 //=============================================================================
 // meth =======================================================================
+
+	#define FESTIVAL_SAY(string) if (festival_verbosity) system("echo " string " | festival --tts");;
+
 	DecisionTreeNode *load_node(File *file) {
 		unsigned char *c = file->cc;
 		Char_get_next_symb(&c);
@@ -232,6 +238,7 @@ private:
 		Char_get_next_symb(&c);
 		file->cc = c;
 
+		++cur_node_cnt;
 		if (*c == SYMB_OPEN_NODE) {
 			DecisionTreeNode *node = DecisionTreeNode::NEW(node_statement);
 
@@ -410,6 +417,8 @@ private:
 	int run_new_node_generation(DecisionTreeNode *cur_node, DecisionTreeNode* prev_node, const int prev_ans) {
 		printf("Well, okay...\n");
 		printf("What is your object?\n> ");
+		FESTIVAL_SAY("Well, okay...");
+		FESTIVAL_SAY("What is your object?");
 
 		char *c_definition = (char*) calloc(MAX_STATEMENT_LEN, sizeof(char));
 		scanf ("%[^\n]%*c", c_definition);
@@ -421,6 +430,7 @@ private:
 		printf("] different from [");
 		cur_node->dump();
 		printf("]? It... /*continue the phrase*/\n> ");
+		FESTIVAL_SAY("And what??");
 
 		char *c_question = (char*) calloc(MAX_STATEMENT_LEN, sizeof(char));
 		scanf ("%[^\n]%*c", c_question);
@@ -436,7 +446,9 @@ private:
 		}
 
 		printf("\nI'll remember!\n");
+		FESTIVAL_SAY("I won't remember");
 
+		++new_node_cnt;
 		return 0;
 	}
 
@@ -515,13 +527,17 @@ public:
 	DecisionTree():
 	root(nullptr),
 	db_file(nullptr),
-	festival_verbosity(false)
+	festival_verbosity(false),
+	cur_node_cnt(0),
+	new_node_cnt(0)
 	{};
 
 	void ctor() {
 		root = nullptr;
 		db_file = nullptr;
 		festival_verbosity = false;
+		cur_node_cnt  = 0;
+		new_node_cnt = 0;
 	}
 
 	~DecisionTree() {};
@@ -530,11 +546,18 @@ public:
 		if (root) {
 			DecisionTreeNode::DELETE(root, true);
 		}
+		root = nullptr;
+
 		if (db_file) {
 			File_destruct(db_file);
 			free(db_file);
 		}
+		db_file = nullptr;
 	}
+
+//=============================================================================
+// Disk work ==================================================================
+//=============================================================================
 
 	int load(const char *file_name) {
 		if (file_name == nullptr) {
@@ -571,22 +594,47 @@ public:
 		return 0;
 	}
 
+	void reload(const char *reload_db_name = "rld.db", bool force = false) {
+		if (!new_node_cnt && !force) {
+			return;
+		}
+
+		save(reload_db_name);
+		dtor();
+		ctor();
+
+		load(reload_db_name);
+	}
+
+	bool check_and_fix_overburdance(const char *reload_db_name = "rld.db") {
+		if ((double) cur_node_cnt / (double) new_node_cnt > OVERLOAD_COEF) {
+			reload(reload_db_name);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	DecisionTreeNode *get_root() const {
 		return root;
 	}
 
 //=============================================================================
-// Run_modes ==================================================================
+// Festival ===================================================================
 //=============================================================================
 
 	void festival_read_it_yourself() {
 		if (festival_verbosity) printf("Try to read it outloud by yourself...\n\n");
-		if (festival_verbosity) system("echo Try to read it outloud by yourself... | festival --tts");
+		FESTIVAL_SAY("Try to read it outloud by yourself...");
 	}
 
 	void festival_no_such_object() {
-		if (festival_verbosity) system("echo What the hell even is it? | festival --tts");
+		FESTIVAL_SAY("What the hell even is it?");
 	}
+
+//=============================================================================
+// Run_modes ==================================================================
+//=============================================================================
 
 	int run_guess(bool fest_verbosity = false) {
 		DecisionTreeNode *cur_node = root;
@@ -622,7 +670,7 @@ public:
 
 	int run_define() {
 		printf("What object do you want me to define?\n> ");
-		if (festival_verbosity) system("echo What object do you want me to define? | festival --tts");
+		FESTIVAL_SAY("What object do you want me to define?");
 		char str[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", str);
 		StringView defenition;
@@ -640,14 +688,14 @@ public:
 
 	int run_difference() {
 		printf("What object do you want me to compare?\n> ");
-		if (festival_verbosity) system("echo What object do you want me to compare? | festival --tts");
+		FESTIVAL_SAY("What object do you want me to compare?");
 		char c_first[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", c_first);
 		StringView first;
 		first.ctor(c_first);
 
 		printf("What should I compare it with?\n> ");
-		if (festival_verbosity) system("echo What should I compare it with? | festival --tts");
+		FESTIVAL_SAY("What should I compare it with?");
 		char c_second[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", c_second);
 		StringView second;
@@ -657,7 +705,7 @@ public:
 
 		if (first == second) {
 			printf("They are just the same, pathetic human...\n");
-			if (festival_verbosity) system("echo They are just the same, pathetic human... | festival --tts");
+			FESTIVAL_SAY("They are just the same, pathetic human...");
 			return 0;
 		}
 
@@ -682,7 +730,7 @@ public:
 			   (*way_first)[common_part] == (*way_second)[common_part]; ++common_part);
 		if (common_part == 0) {
 			printf("They are so different...\n");
-			if (festival_verbosity) system("echo They are so different... | festival --tts");
+			FESTIVAL_SAY("They are so different...");
 		} else {
 			festival_read_it_yourself();
 			first.print();
@@ -692,7 +740,7 @@ public:
 			second.print();
 
 			printf("\nBut\n");
-			if (festival_verbosity) system("echo But... | festival --tts");
+			FESTIVAL_SAY("But...");
 		}
 
 		if (common_part == 0) {
@@ -736,6 +784,7 @@ public:
 
 	int run_interaction() {
 		while (true) {
+			check_and_fix_overburdance();
 			print_interface();
 			printf("> ");
 			char answer;
@@ -830,6 +879,8 @@ public:
 
 		return 0;
 	}
+
+	#undef FESTIVAL_SAY
 };
 
 #endif // DECISION_TREE
