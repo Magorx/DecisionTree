@@ -14,11 +14,42 @@ private:
 	size_t size;
 
 public:
-	String() {
-		nullify();
+	String() :
+	buffer(nullptr),
+	capacity(0),
+	size(0)
+	{}
+
+	void ctor() {}
+
+	static String *NEW() {
+		String *cake = (String*) calloc(1, sizeof(String));
+		if (!cake) {
+			return nullptr;
+		}
+
+		cake->ctor();
+		return cake;
 	}
 
-	String(const char *c_string) {
+	void dtor() {
+		nullify(buffer != nullptr);
+	}
+
+	static void DELETE(String *string) {
+		if (!string) {
+			return;
+		}
+
+		string->dtor();
+		free(string);
+	}
+
+	String(const char *c_string):
+	buffer(nullptr),
+	capacity(0),
+	size(0)
+	{
 		if (c_string == nullptr) {
 			nullify();
 			return;
@@ -38,10 +69,7 @@ public:
 	}
 
 	~String() {
-		if (!is_null()) {
-			free(buffer);
-			nullify();
-		}
+		nullify(buffer != nullptr);
 	}
 
 	void nullify(const bool to_free = false) {
@@ -96,8 +124,9 @@ public:
 		memcpy(buffer, c_string, size);
 		buffer[size] = '\0';
 
-		return length;
+		return (int) length;
 	}
+
 	void print(FILE *file_ptr = stdout, const int sidx = -1, const int eidx = -1) const {
 		if (is_null()) {
 			return;
@@ -115,13 +144,13 @@ public:
 		return buffer;
 	}
 
-	bool operator==(const String &other) {
+	bool operator==(const String &other) const {
 		if (length() != other.length()) {
 			return false;
 		}
 
-		int len = length();
-		for (int i = 0; i < len; ++i) {
+		size_t len = length();
+		for (size_t i = 0; i < len; ++i) {
 			if ((*this)[i] != other[i]) {
 				return false;
 			}

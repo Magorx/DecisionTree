@@ -19,11 +19,8 @@ CFLAGS = $(STANDARD) $(WARNINGS) -lm
 
 all: detree
 
-detree: main.cpp decision_tree.o gc_strings_and_files.o
-	$(CPP) $(CFLAGS) main.cpp decision_tree.o gc_strings_and_files.o -o detree
-
-decision_tree.o: decision_tree.cpp decision_tree.h $(GCPP)/vector.h $(GCPP)/string.h
-	$(CPP) $(CFLAGS) decision_tree.cpp -c -o decision_tree.o
+detree: main.cpp gc_strings_and_files.o decision_tree.h $(GCPP)/string.h
+	$(CPP) $(CFLAGS) main.cpp gc_strings_and_files.o -g -o detree
 
 gc_strings_and_files.o: $(GC)/strings_and_files.c $(GC)/strings_and_files.h
 	$(CPP) $(CFLAGS) $(GC)/strings_and_files.c -c -o gc_strings_and_files.o

@@ -85,6 +85,7 @@ void File_destruct(const File *file) {
     }
     free(file->lines);
     free(file->text);
+    fclose(file->ptr);
 }
 
 int File_construct(File *file, const char *name) {

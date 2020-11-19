@@ -20,13 +20,21 @@ private:
 	}
 
 public:
-	Vector() {
+	Vector() :
+	buffer(nullptr),
+	cur_size(0),
+	capacity(0)
+	{
 		capacity = 32;
 		buffer = (T*) malloc(capacity * sizeof(T));
 		cur_size = 0;
 	}
 
-	Vector(const size_t size_) {
+	Vector(const size_t size_) :
+	buffer(nullptr),
+	cur_size(0),
+	capacity(0)
+	{
 		capacity = cur_size * 2;
 		buffer = (T*) calloc(capacity, sizeof(T));
 		cur_size = size_;
