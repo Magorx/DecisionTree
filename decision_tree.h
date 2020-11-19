@@ -12,7 +12,7 @@ const char SYMB_OPEN_NODE  = '[';
 const char SYMB_CLOSE_NODE = ']';
 const char SYMB_QUOTE      = '"';
 
-const int MAX_STATEMENT_LEN = 10;
+const int MAX_STATEMENT_LEN = 50;
 
 enum GUESS_GAME_OUTCOMES {
 	GUESS     = 2,
@@ -87,17 +87,27 @@ public:
 
 	~DecisionTreeNode() {};
 
-	void dtor() {
+	void dtor(bool recursive = false) {
 		String::DELETE(statement);
 		statement = nullptr;
+
+		if (recursive) {
+			if (node_true)  node_true-> dtor(recursive);
+			if (node_false) node_false->dtor(recursive);
+		}
 	}
 
-	static void DELETE(DecisionTreeNode *node) {
+	static void DELETE(DecisionTreeNode *node, bool recursive = false) {
 		if (!node) {
 			return;
 		}
 
 		node->dtor();
+		if (recursive) {
+			if (node->node_true)  DELETE(node->node_true,  recursive);
+			if (node->node_false) DELETE(node->node_false, recursive);
+		}
+
 		free(node);
 	}
 
@@ -187,7 +197,7 @@ private:
 		}
 
 		++c;
-		String *node_statement = new String();
+		String *node_statement = String::NEW();
 		c += node_statement->read(c, false, '"');
 
 		++c;
@@ -277,7 +287,7 @@ private:
 	}
 
 	Vector<char> *find_definition_way (const String &definition) {
-		Vector<char> *buffer = new Vector<char>();
+		Vector<char> *buffer = Vector<char>::NEW();
 		node_find_definition_way(definition, root, buffer);
 		return buffer;
 	}
@@ -295,7 +305,7 @@ private:
 		printf(" ");
 		print_definition_by_way(*way);
 
-		delete way;
+		Vector<char>::DELETE(way);
 		return 0;
 	}
 
@@ -329,7 +339,7 @@ private:
 
 		char str[MAX_STATEMENT_LEN];
 		scanf ("%[^\n]%*c", str);
-		String *definition = new String(str);
+		String *definition = String::NEW(str);
 		DecisionTreeNode *new_defenition_node = DecisionTreeNode::NEW(definition);
 
 		printf("\nAnd how is [");
@@ -339,7 +349,7 @@ private:
 		printf("]? It... /*continue the phrase*/\n> ");
 
 		scanf ("%[^\n]%*c", str);
-		String *question = new String(str);
+		String *question = String::NEW(str);
 		DecisionTreeNode *new_question_node = DecisionTreeNode::NEW(question);
 		new_question_node->set_true (new_defenition_node);
 		new_question_node->set_false(cur_node);
@@ -437,7 +447,7 @@ public:
 
 	void dtor() {
 		if (root) {
-			DecisionTreeNode::DELETE(root);
+			DecisionTreeNode::DELETE(root, true);
 		}
 	}
 
@@ -519,11 +529,14 @@ public:
 		printf("What object do you want me to define?\n> ");
 		char str[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", str);
-		String defenition(str);
+		String defenition;
+		defenition.ctor(str);
 
 		printf("\n");
 		print_definition(defenition);
 		printf("\n");
+
+		defenition.dtor();
 
 		return 0;
 	}
@@ -532,12 +545,14 @@ public:
 		printf("What object do you want me to compare?\n> ");
 		char c_first[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", c_first);
-		String first(c_first);
+		String first;
+		first.ctor(c_first);
 
 		printf("What should I compare it with?\n> ");
 		char c_second[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", c_second);
-		String second(c_second);
+		String second;
+		second.ctor(c_second);
 
 		printf("\n");
 
@@ -590,8 +605,10 @@ public:
 		print_definition_by_way(*way_second, common_part);
 		printf("\n~~~~~~~\n");
 
-		delete way_first;
-		delete way_second;
+		first.dtor();
+		second.dtor();
+		Vector<char>::DELETE(way_first);
+		Vector<char>::DELETE(way_second);
 
 		return 0;
 	}

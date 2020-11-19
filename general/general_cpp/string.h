@@ -20,7 +20,38 @@ public:
 	size(0)
 	{}
 
+	~String() {}
+
 	void ctor() {}
+
+	void ctor(const char *c_string) {
+		if (c_string == nullptr) {
+			nullify();
+			return;
+		}
+
+		size = strlen(c_string);
+		capacity = size + 1;
+		
+		buffer = (char*) malloc(sizeof(char) * (size + 1));
+		if (!buffer) {
+			nullify();
+			return;
+		}
+
+		memcpy(buffer, c_string, size);
+		buffer[size] = '\0';
+	}
+
+	static String *NEW(const char *c_string) {
+		String *cake = (String*) calloc(1, sizeof(String));
+		if (!cake) {
+			return nullptr;
+		}
+
+		cake->ctor(c_string);
+		return cake;
+	}
 
 	static String *NEW() {
 		String *cake = (String*) calloc(1, sizeof(String));
@@ -43,33 +74,6 @@ public:
 
 		string->dtor();
 		free(string);
-	}
-
-	String(const char *c_string):
-	buffer(nullptr),
-	capacity(0),
-	size(0)
-	{
-		if (c_string == nullptr) {
-			nullify();
-			return;
-		}
-
-		size = strlen(c_string);
-		capacity = size + 1;
-		
-		buffer = (char*) malloc(sizeof(char) * (size + 1));
-		if (!buffer) {
-			nullify();
-			return;
-		}
-
-		memcpy(buffer, c_string, size);
-		buffer[size] = '\0';
-	}
-
-	~String() {
-		nullify(buffer != nullptr);
 	}
 
 	void nullify(const bool to_free = false) {

@@ -28,5 +28,8 @@ gc_strings_and_files.o: $(GC)/strings_and_files.c $(GC)/strings_and_files.h
 run: all
 	./$(CUR_PROG)
 
+valg: all
+	valgrind --leak-check=full -s ./$(CUR_PROG)
+
 clear:
 	rm *.o

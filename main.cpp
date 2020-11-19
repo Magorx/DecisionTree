@@ -4,10 +4,12 @@ int main() {
 	DecisionTree tree;
 	tree.load("akinator.db");
 	tree.save("akinator_runtime_copy.db");
-	tree.dump();
+	//tree.dump();
 
 	tree.run_interaction();
 	tree.save("akinator.db");
+
+	tree.dtor();
 
 	return 0;
 }

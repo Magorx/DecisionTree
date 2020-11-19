@@ -24,25 +24,60 @@ public:
 	buffer(nullptr),
 	cur_size(0),
 	capacity(0)
-	{
+	{}
+
+	void ctor() {
 		capacity = 32;
 		buffer = (T*) malloc(capacity * sizeof(T));
 		cur_size = 0;
+	}
+
+	static Vector<T> *NEW() {
+		Vector<T> *cake = (Vector<T>*) calloc(1, sizeof(Vector<T>));
+		if (!cake) {
+			return nullptr;
+		}
+
+		cake->ctor();
+		return cake;
 	}
 
 	Vector(const size_t size_) :
 	buffer(nullptr),
 	cur_size(0),
 	capacity(0)
-	{
+	{}
+
+	void ctor(const size_t size_) {
 		capacity = cur_size * 2;
 		buffer = (T*) calloc(capacity, sizeof(T));
 		cur_size = size_;
 	}
 
-	~Vector() {
+	static Vector<T> *NEW(const size_t size_) {
+		Vector<T> *cake = (Vector<T>*) calloc(1, sizeof(Vector<T>));
+		if (!cake) {
+			return nullptr;
+		}
+
+		cake->ctor(size_);
+		return cake;
+	}
+
+	~Vector() {}
+
+	void dtor() {
 		cur_size = 0;
 		free(buffer);
+	}
+
+	static void DELETE(Vector<T> *vector) {
+		if (!vector) {
+			return;
+		}
+
+		vector->dtor();
+		free(vector);
 	}
 
 	T &operator[](const size_t i) const {
