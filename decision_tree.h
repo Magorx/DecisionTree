@@ -767,7 +767,6 @@ public:
 	}
 
 	void print_interface() {
-		printf("/^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\ \n");
 		printf("+-------------------+-----------+---------------------+  \n");
 		printf("|                 <~| DeTreeser |~>                   |  \n");
 		printf("+-------------------+-----------+---------------------+  \n");
@@ -779,12 +778,12 @@ public:
 		printf("| [v] - change verbosity for festival, currently: %s  |  \n", festival_verbosity ? "on" : "of");
 		printf("| [m] - merge 'db1.db' with 'db2.db' into 'db_out.db' |  \n");
 		printf("+-----------------------------------------------------+  \n");
-		printf("\\_____________________________________________________/ \n");
 	}
 
 	int run_interaction() {
 		while (true) {
 			check_and_fix_overburdance();
+			reload("rld.db", true);
 			print_interface();
 			printf("> ");
 			char answer;
