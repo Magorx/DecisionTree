@@ -4,29 +4,9 @@
     [
         "is a student"
         [
-            "does hate self"
-            [
-                "bobic"
+            "An average MIPT fun"
 
-                "An average MIPT fun"
-            ]
-
-            "is clever"
-            [
-                "Professor"
-
-                "is polka"
-                [
-                    "polka"
-
-                    "is smiling"
-                    [
-                        "kokos"
-
-                        "An everage MIPT enjoyer"
-                    ]
-                ]
-            ]
+            "An everage MIPT enjoyer"
         ]
 
         "is selling you something"
@@ -96,7 +76,7 @@
                 [
                     "the main building"
 
-                    "is mainly known for canteen"
+                    "is canteen situates here"
                     [
                         "suicide"
                         [
@@ -151,7 +131,57 @@
                         [
                             "seedbed"
 
-                            "Analytical geometry course with Anna Petrovich"
+                            "is game"
+                            [
+                                "is slavic RPG"
+                                [
+                                    "is made in Czech"
+                                    [
+                                        "Kingdom Come: Deliverance"
+
+                                        "Witcher 3"
+                                    ]
+
+                                    "is made by Bethesda"
+                                    [
+                                        "is best Fallout game"
+                                        [
+                                            "Fallout 2"
+
+                                            "is worst Fallout game"
+                                            [
+                                                "Fallout 76"
+
+                                                "can be launched on calculator"
+                                                [
+                                                    "Doom"
+
+                                                    "Fallout New Vegas"
+                                                ]
+                                            ]
+                                        ]
+
+                                        "does have western setting"
+                                        [
+                                            "Red Dead Redemption 2"
+
+                                            "is the best game ever made"
+                                            [
+                                                "Minecraft"
+
+                                                "is in developing now :("
+                                                [
+                                                    "Cyberpunk 2077"
+
+                                                    "GTA 5"
+                                                ]
+                                            ]
+                                        ]
+                                    ]
+                                ]
+
+                                "Analytical geometry course with Anna Petrovich"
+                            ]
                         ]
                     ]
                 ]
