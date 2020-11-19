@@ -1,12 +1,11 @@
 #ifndef DECISION_TREE
 #define DECISION_TREE
 
-#include "general/general_c/warnings.h"
-#pragma GCC diagnostic ignored "-Weffc++"
+#include "general/warnings.h"
 
-#include "general/general_c/strings_and_files.h"
-#include "general/general_cpp/string.h" // todo redo
-#include "general/general_cpp/vector.h"
+#include "general/c/strings_and_files.h"
+#include "general/cpp/stringview.hpp"
+#include "general/cpp/vector.hpp"
 
 const char SYMB_OPEN_NODE  = '[';
 const char SYMB_CLOSE_NODE = ']';
@@ -29,7 +28,7 @@ enum GUESS_GAME_OUTCOMES {
 class DecisionTreeNode {
 private:
 // data =======================================================================
-	String           *statement;
+	StringView           *statement;
 	DecisionTreeNode *node_true;
 	DecisionTreeNode *node_false;
 // meth =======================================================================
@@ -51,7 +50,14 @@ private:
 	}
 
 public:
-	DecisionTreeNode () {}; 
+	DecisionTreeNode           (const DecisionTreeNode& other) = delete;
+	DecisionTreeNode& operator=(const DecisionTreeNode& other) = delete;
+
+	DecisionTreeNode ():
+	statement(nullptr),
+	node_true(nullptr),
+	node_false(nullptr)
+	{} 
 	
 	void ctor() {
 		statement  = nullptr;
@@ -69,13 +75,13 @@ public:
 		return cake;
 	}
 
-	void ctor(String *statement_, DecisionTreeNode  *node_true_  = nullptr, DecisionTreeNode *node_false_ = nullptr) {
+	void ctor(StringView *statement_, DecisionTreeNode  *node_true_  = nullptr, DecisionTreeNode *node_false_ = nullptr) {
 		statement  = statement_;
 		node_true  = node_true_;
 		node_false = node_false_;
 	}
 
-	static DecisionTreeNode *NEW(String *statement_, DecisionTreeNode  *node_true_  = nullptr, DecisionTreeNode *node_false_ = nullptr) {
+	static DecisionTreeNode *NEW(StringView *statement_, DecisionTreeNode  *node_true_  = nullptr, DecisionTreeNode *node_false_ = nullptr) {
 		DecisionTreeNode *cake = (DecisionTreeNode*) calloc(1, sizeof(DecisionTreeNode));
 		if (!cake) {
 			return nullptr;
@@ -88,7 +94,7 @@ public:
 	~DecisionTreeNode() {};
 
 	void dtor(bool recursive = false) {
-		String::DELETE(statement);
+		StringView::DELETE(statement);
 		statement = nullptr;
 
 		if (recursive) {
@@ -135,31 +141,51 @@ public:
 		return node_false;
 	}
 
-	const String &get_statement () const {
+	const StringView &get_statement () const {
 		return *statement;
 	}
 
-	int state() {
+	int state(bool festival_verbosity = false) {
 		if (is_defenition()) {
-			return state_definition();
+			return state_definition(festival_verbosity);
 		} else {
-			return state_question();
+			return state_question(festival_verbosity);
 		}
 	}
 
-	int state_definition() {
+	int state_definition(bool festival_verbosity = false) {
 		printf("Yout object is ");
 		statement->print();
 		printf("!\n");
 		printf("Am I right?\n");
 
+		if (festival_verbosity) {
+			char format[200] = "echo Your object is %s! Am I right? | festival --tts";
+			statement->generate_length_format(format);
+
+			char generated_say_command[200];
+			sprintf(generated_say_command, format, statement->get_buffer());
+
+			system(generated_say_command);
+		}
+
 		return GUESS + get_and_process_answer();
 	}
 
-	int state_question() {
+	int state_question(bool festival_verbosity = false) {
 		printf("Is it true that your object ");
 		statement->print();
 		printf("?\n");
+
+		if (festival_verbosity) {
+			char format[200] = "echo Is it true that your object %s? | festival --tts";
+			statement->generate_length_format(format);
+
+			char generated_say_command[200];
+			sprintf(generated_say_command, format, statement->get_buffer());
+
+			system(generated_say_command);
+		}
 
 		return QUESTION + get_and_process_answer();
 	}
@@ -186,10 +212,12 @@ class DecisionTree {
 private:
 // data =======================================================================
 	DecisionTreeNode *root;
+	File *db_file;
+	bool festival_verbosity;
 //=============================================================================
 // meth =======================================================================
 	DecisionTreeNode *load_node(File *file) {
-		const unsigned char *c = file->cc;
+		unsigned char *c = file->cc;
 		Char_get_next_symb(&c);
 		if (*c != SYMB_QUOTE) {
 			printf("[ERR]<DeTreeNode>: invalid file being loaded\n");
@@ -197,8 +225,8 @@ private:
 		}
 
 		++c;
-		String *node_statement = String::NEW();
-		c += node_statement->read(c, false, '"');
+		StringView *node_statement = StringView::NEW();
+		c += node_statement->read((char*) c, false, '"');
 
 		++c;
 		Char_get_next_symb(&c);
@@ -262,7 +290,7 @@ private:
 		return 0;
 	}
 
-	bool node_find_definition_way(const String &definition, const DecisionTreeNode *cur_node, Vector<char> *buffer) {
+	bool node_find_definition_way(const StringView &definition, const DecisionTreeNode *cur_node, Vector<char> *buffer) {
 		if (cur_node->is_question()) {
 			buffer->push_back(1);
 			if (node_find_definition_way(definition, cur_node->get_node_true(), buffer)) {
@@ -286,18 +314,17 @@ private:
 		return false;
 	}
 
-	Vector<char> *find_definition_way (const String &definition) {
+	Vector<char> *find_definition_way(const StringView &definition) {
 		Vector<char> *buffer = Vector<char>::NEW();
 		node_find_definition_way(definition, root, buffer);
 		return buffer;
 	}
 
-	int print_definition(const String &definition) {
+	int print_definition(const StringView &definition) {
 		Vector<char> *way = find_definition_way(definition);
 		if (way->size() == 0) {
-			printf("I don't know what [");
-			definition.print();
-			printf("] is!\n");
+			printf("What the hell even is it?\n");
+			festival_no_such_object();
 			return 0;
 		}
 
@@ -309,63 +336,7 @@ private:
 		return 0;
 	}
 
-	void dump(DecisionTreeNode *node, int depth, int to_format_cnt, int maxlen, FILE *file_ptr) const {
-		if (!node) {return;}
-
-		dump(node->get_node_true(), depth + 1, to_format_cnt + 1, maxlen, file_ptr);
-
-		for (int i = 0; i < depth; ++i) {
-			for (int j = 0; j < maxlen; ++j) {
-				printf(" ");
-			}
-			if (depth - to_format_cnt- 1 <= i) {
-				printf("|");
-			} else {
-				printf(" ");
-			}
-		}
-
-		node->dump(file_ptr);
-		for (int i = 0; i < maxlen - (int) node->get_statement().length() - 1; ++i) {
-			printf("-");
-		}
-		printf("->|\n");
-		dump(node->get_node_false(), depth + 1, to_format_cnt + 1, maxlen, file_ptr);
-	}
-
-	int run_new_node_generation(DecisionTreeNode *cur_node, DecisionTreeNode* prev_node, const int prev_ans) {
-		printf("Well, okay...\n");
-		printf("What is your object?\n> ");
-
-		char str[MAX_STATEMENT_LEN];
-		scanf ("%[^\n]%*c", str);
-		String *definition = String::NEW(str);
-		DecisionTreeNode *new_defenition_node = DecisionTreeNode::NEW(definition);
-
-		printf("\nAnd how is [");
-		new_defenition_node->dump();
-		printf("] different from [");
-		cur_node->dump();
-		printf("]? It... /*continue the phrase*/\n> ");
-
-		scanf ("%[^\n]%*c", str);
-		String *question = String::NEW(str);
-		DecisionTreeNode *new_question_node = DecisionTreeNode::NEW(question);
-		new_question_node->set_true (new_defenition_node);
-		new_question_node->set_false(cur_node);
-
-		if (prev_ans) {
-			prev_node->set_true(new_question_node);
-		} else {
-			prev_node->set_false(new_question_node);
-		}
-
-		printf("\nI'll remember!\n");
-
-		return 0;
-	}
-
-	void print_prefixed_statement(const String &statement, const bool truth) const {
+	void print_prefixed_statement(const StringView &statement, const bool truth) const {
 		if (!statement.length()) {
 			return;
 		}
@@ -412,6 +383,63 @@ private:
 		print_prefixed_statement(node->get_statement(), way[way_size - 1]);
 	}
 
+	void dump(DecisionTreeNode *node, int depth, int to_format_cnt, int maxlen, FILE *file_ptr) const {
+		if (!node) {return;}
+
+		dump(node->get_node_true(), depth + 1, to_format_cnt + 1, maxlen, file_ptr);
+
+		for (int i = 0; i < depth; ++i) {
+			for (int j = 0; j < maxlen; ++j) {
+				printf(" ");
+			}
+			if (depth - to_format_cnt- 1 <= i) {
+				printf("|");
+			} else {
+				printf(" ");
+			}
+		}
+
+		node->dump(file_ptr);
+		for (int i = 0; i < maxlen - (int) node->get_statement().length() - 1; ++i) {
+			printf("-");
+		}
+		printf("->|\n");
+		dump(node->get_node_false(), depth + 1, to_format_cnt + 1, maxlen, file_ptr);
+	}
+
+	int run_new_node_generation(DecisionTreeNode *cur_node, DecisionTreeNode* prev_node, const int prev_ans) {
+		printf("Well, okay...\n");
+		printf("What is your object?\n> ");
+
+		char *c_definition = (char*) calloc(MAX_STATEMENT_LEN, sizeof(char));
+		scanf ("%[^\n]%*c", c_definition);
+		StringView *definition = StringView::NEW(c_definition, true);
+		DecisionTreeNode *new_defenition_node = DecisionTreeNode::NEW(definition);
+
+		printf("\nAnd how is [");
+		new_defenition_node->dump();
+		printf("] different from [");
+		cur_node->dump();
+		printf("]? It... /*continue the phrase*/\n> ");
+
+		char *c_question = (char*) calloc(MAX_STATEMENT_LEN, sizeof(char));
+		scanf ("%[^\n]%*c", c_question);
+		StringView *question = StringView::NEW(c_question, true);
+		DecisionTreeNode *new_question_node = DecisionTreeNode::NEW(question);
+		new_question_node->set_true (new_defenition_node);
+		new_question_node->set_false(cur_node);
+
+		if (prev_ans) {
+			prev_node->set_true(new_question_node);
+		} else {
+			prev_node->set_false(new_question_node);
+		}
+
+		printf("\nI'll remember!\n");
+
+		return 0;
+	}
+
 	DecisionTreeNode *merge_node(DecisionTreeNode *first, DecisionTreeNode *second) {
 		if (first->is_question() && second->is_question()) {
 			if (first->get_statement() == second->get_statement()) {
@@ -435,12 +463,65 @@ private:
 		}
 	}
 
+	void graphviz_dump_node_name(const DecisionTreeNode *node, FILE *file) {
+		fprintf(file, "\"");
+		node->get_statement().print(file);
+		fprintf(file, "\"");
+	}
+
+	void graphviz_dump_node(const DecisionTreeNode *node, FILE *file) {
+		graphviz_dump_node_name(node, file);
+		fprintf(file, "[label=");
+		graphviz_dump_node_name(node, file);
+
+		if (node == root) {
+			fprintf(file, "fillcolor=\"#000000\" style=filled color=gold penwidth=2 fontcolor=white");
+		} else if (node->is_defenition()) {
+			fprintf(file, "fillcolor=\"#CCCCFF\" style=filled color=red   penwidth=2");
+		} else {
+			fprintf(file, "fillcolor=\"#CCFFCC\" style=filled color=green penwidth=2");
+		}
+
+		fprintf(file, "]\n");
+	}
+
+	void graphviz_dump(const DecisionTreeNode *node, FILE *file) {
+		if (!node) {return;}
+
+		graphviz_dump_node(node, file);
+
+		if (node->get_node_true()) {
+			graphviz_dump_node_name(node, file);
+			fprintf(file, "->");
+			graphviz_dump_node_name(node->get_node_true(), file);
+			fprintf(file, "[color=green label=\"yes\" penwidth=2]\n");
+		}
+		if (node->get_node_false()) {
+			graphviz_dump_node_name(node, file);
+			fprintf(file, "->");
+			graphviz_dump_node_name(node->get_node_false(), file);
+			fprintf(file, "[color=red label=\"no\" penwidth=2]\n");
+		}
+
+		graphviz_dump(node->get_node_true (), file);
+		graphviz_dump(node->get_node_false(), file);
+	}
+
 //=============================================================================
 public:
-	DecisionTree () {};
+	DecisionTree           (const DecisionTree& other) = delete;
+	DecisionTree& operator=(const DecisionTree& other) = delete;
+
+	DecisionTree():
+	root(nullptr),
+	db_file(nullptr),
+	festival_verbosity(false)
+	{};
 
 	void ctor() {
 		root = nullptr;
+		db_file = nullptr;
+		festival_verbosity = false;
 	}
 
 	~DecisionTree() {};
@@ -448,6 +529,10 @@ public:
 	void dtor() {
 		if (root) {
 			DecisionTreeNode::DELETE(root, true);
+		}
+		if (db_file) {
+			File_destruct(db_file);
+			free(db_file);
 		}
 	}
 
@@ -457,13 +542,13 @@ public:
 			return -1;
 		}
 
-		File file = {};
-		if (File_construct(&file, file_name) < 0) {
+		File *file = (File*) calloc(1, sizeof(File));
+		if (File_construct(file, file_name) < 0) {
 			printf("[ERR]<detree>: [file_name](%s) unexistance\n", file_name);
 		}
 
-		root = load_node(&file);
-		File_destruct(&file);
+		root = load_node(file);
+		db_file = file;
 
 		return 0;
 	}
@@ -494,7 +579,16 @@ public:
 // Run_modes ==================================================================
 //=============================================================================
 
-	int run_guess() {
+	void festival_read_it_yourself() {
+		if (festival_verbosity) printf("Try to read it outloud by yourself...\n\n");
+		if (festival_verbosity) system("echo Try to read it outloud by yourself... | festival --tts");
+	}
+
+	void festival_no_such_object() {
+		if (festival_verbosity) system("echo What the hell even is it? | festival --tts");
+	}
+
+	int run_guess(bool fest_verbosity = false) {
 		DecisionTreeNode *cur_node = root;
 
 		int answer = QUESTION;
@@ -503,7 +597,7 @@ public:
 
 		while (true) {
 			prev_ans = answer;
-			answer   = cur_node->state();
+			answer   = cur_node->state(fest_verbosity);
 			printf("\n");
 
 			if (answer < GUESS) {
@@ -518,6 +612,7 @@ public:
 
 		if (answer == GUESS_YES) {
 			printf("Accurate as always \\(>o<)/\n");
+			if (fest_verbosity) system("echo Accurate as always! | festival --tts");
 		} else {
 			run_new_node_generation(cur_node, prev_node, prev_ans);
 		}
@@ -527,11 +622,13 @@ public:
 
 	int run_define() {
 		printf("What object do you want me to define?\n> ");
+		if (festival_verbosity) system("echo What object do you want me to define? | festival --tts");
 		char str[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", str);
-		String defenition;
+		StringView defenition;
 		defenition.ctor(str);
 
+		festival_read_it_yourself();
 		printf("\n");
 		print_definition(defenition);
 		printf("\n");
@@ -543,21 +640,24 @@ public:
 
 	int run_difference() {
 		printf("What object do you want me to compare?\n> ");
+		if (festival_verbosity) system("echo What object do you want me to compare? | festival --tts");
 		char c_first[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", c_first);
-		String first;
+		StringView first;
 		first.ctor(c_first);
 
 		printf("What should I compare it with?\n> ");
+		if (festival_verbosity) system("echo What should I compare it with? | festival --tts");
 		char c_second[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", c_second);
-		String second;
+		StringView second;
 		second.ctor(c_second);
 
 		printf("\n");
 
 		if (first == second) {
 			printf("They are just the same, pathetic human...\n");
+			if (festival_verbosity) system("echo They are just the same, pathetic human... | festival --tts");
 			return 0;
 		}
 
@@ -565,16 +665,14 @@ public:
 		Vector<char> *way_second = find_definition_way(second);
 
 		if (!way_first->size()) {
-			printf("Oh, I don't know what ");
-			first.print();
-			printf(" is\n");
+			printf("What the hell even is it?\n");
+			festival_no_such_object();
 			return 0;
 		}
 
 		if (!way_second->size()) {
-			printf("Oh, I don't know what ");
-			second.print();
-			printf(" is\n");
+			printf("What the hell even is it?\n");
+			festival_no_such_object();
 			return 0;
 		}
 
@@ -584,26 +682,33 @@ public:
 			   (*way_first)[common_part] == (*way_second)[common_part]; ++common_part);
 		if (common_part == 0) {
 			printf("They are so different...\n");
+			if (festival_verbosity) system("echo They are so different... | festival --tts");
 		} else {
+			festival_read_it_yourself();
 			first.print();
 			printf(" ");
 			print_definition_by_way(*way_first, 0, common_part);
 			printf(" and so is ");
 			second.print();
 
-			printf("\n\n~~But~~\n");
+			printf("\nBut\n");
+			if (festival_verbosity) system("echo But... | festival --tts");
+		}
+
+		if (common_part == 0) {
+			festival_read_it_yourself();
 		}
 
 		first.print();
 		printf(" ");
 		print_definition_by_way(*way_first, common_part);
 
-		printf("\n~While~\n");
+		printf("\nWhile\n");
 
 		second.print();
 		printf(" ");
 		print_definition_by_way(*way_second, common_part);
-		printf("\n~~~~~~~\n");
+		printf("\n");
 
 		first.dtor();
 		second.dtor();
@@ -613,59 +718,74 @@ public:
 		return 0;
 	}
 
+	void print_interface() {
+		printf("/^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\ \n");
+		printf("+-------------------+-----------+---------------------+  \n");
+		printf("|                 <~| DeTreeser |~>                   |  \n");
+		printf("+-------------------+-----------+---------------------+  \n");
+		printf("| [q] - exit                                          |  \n");
+		printf("| [1] - play a guessing game                          |  \n");
+		printf("| [2] - get a definition of an object                 |  \n");
+		printf("| [3] - get a difference between two objects          |  \n");
+		printf("| [4] - make a pretty dump                            |  \n");
+		printf("| [v] - change verbosity for festival, currently: %s  |  \n", festival_verbosity ? "on" : "of");
+		printf("| [m] - merge 'db1.db' with 'db2.db' into 'db_out.db' |  \n");
+		printf("+-----------------------------------------------------+  \n");
+		printf("\\_____________________________________________________/ \n");
+	}
+
 	int run_interaction() {
-		printf("[ ] ~ Which mode of Ultra-De-Tree you want to use?\n");
-		printf("[1] - play a guessing game\n");
-		printf("[2] - get a definition of an object\n");
-		printf("[3] - get a difference between two objects\n");
-		printf("[4] - merge 'db1.db' with 'db2.db' into 'db_out.db'\n");
-		printf("> ");
-
-		int answer = 0;
-		int cnt = 0;
-		scanf("%d", &answer);
-		while (!(answer >= 1 && answer <= 4)) {
-			++cnt;
-			printf("Ha-ha, very funny, try again\n");
-			if (cnt > 10) {
-				printf("I'll keep you here forever...\n");
-			}
+		while (true) {
+			print_interface();
 			printf("> ");
-			scanf("%d", &answer);
-		}
-		printf("\n");
+			char answer;
+			scanf("%c", &answer);
 
-		switch (answer) {
-			case 1: {
-				run_guess();
-				break;
-			}
-			case 2: {
-				getchar();
-				run_define();
-				break;
-			}
-			case 3: {
-				getchar();
-				run_difference();
-				break;
-			}
-			case 4: {
-				DecisionTree first, second;
-				first.load("db1.db");
-				second.load("db2.db");
+			switch (answer) {
+				case 'q': {
+					return 0;
+				}
+				case '1': {
+					run_guess(festival_verbosity);
+					break;
+				}
+				case '2': {
+					getchar();
+					run_define();
+					break;
+				}
+				case '3': {
+					getchar();
+					run_difference();
+					break;
+				}
+				case '4': {
+					graphviz_dump("akidump", "svg");
+					break;
+				}
+				case 'v': {
+					festival_verbosity ^= 1;
+					break;
+				}
+				case 'm': {
+					DecisionTree first, second;
+					first.load("db1.db");
+					second.load("db2.db");
 
-				first.merge(second);
+					first.merge(second);
 
-				first.save("db_out.db");
-				printf(".doned.\n");
-				break;
+					first.save("db_out.db");
+					printf(".doned.\n");
+					break;
+				}
+				default: {
+					printf("Make a simple choice, human!\n");
+					break;
+				}
 			}
-			default: {
-				printf("I'm feeling strange...\n");
-				break;
-			}
-		}
+
+			printf("\n");
+		}		
 
 		return 0;
 	}
@@ -678,6 +798,37 @@ public:
 
 	void merge(const DecisionTree &tree) {
 		root = merge_node(root, tree.get_root());
+	}
+
+	int graphviz_dump(const char *file_name, const char *format = "svg") {
+		if (file_name == nullptr) {
+			printf("[ERR]<detree>: [file_name](nullptr)\n");
+			return -1;
+		}
+
+		FILE *file = fopen(file_name, "w");
+		if (!file) {
+			printf("[ERR]<detree>: [file_name](%s) can't be opened\n", file_name);
+			return -1;
+		}
+
+		fprintf(file, "digraph list {rankdir=\"UD\";\n");
+
+		graphviz_dump(root, file);
+		
+		fprintf(file, "}\n");
+		fclose(file);
+
+		char generate_picture_command[100];
+		sprintf(generate_picture_command, "dot %s -T%s -o%s.svg", file_name, format, file_name);
+
+		char view_picture_command[100];
+		sprintf(view_picture_command, "eog %s.%s", file_name, format);
+		
+		system(generate_picture_command);
+		system(view_picture_command);
+
+		return 0;
 	}
 };
 

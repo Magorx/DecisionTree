@@ -30,10 +30,10 @@ void qqh_sort(void *input_arr, const size_t elem_cnt, const size_t elem_size, in
     }
 }
 
-void Char_get_next_symb(const unsigned char **c) {
+void Char_get_next_symb(unsigned char **c) {
     assert(c);
 
-    const unsigned char *cur_c = *c;
+    unsigned char *cur_c = *c;
     while(isspace(*cur_c) && *cur_c) {
         ++cur_c;
     }
@@ -51,8 +51,8 @@ char Char_in_string(const unsigned char c, const unsigned char *str) {
 }
 
 int compare_lines_letters(const void *elem1, const void *elem2) {
-    const unsigned char *first_c  = ((**(Line* const *)elem1).string);
-    const unsigned char *second_c = ((**(Line* const *)elem2).string);
+    unsigned char *first_c  = ((**(Line* *)elem1).string);
+    unsigned char *second_c = ((**(Line* *)elem2).string);
 
     while (*first_c && *second_c) {
         Char_get_next_symb(&first_c);

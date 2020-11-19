@@ -24,7 +24,7 @@ typedef struct File_s {
     size_t lines_cnt;
     Line **lines;
 
-    const unsigned char *cc; // cur char
+    unsigned char *cc; // cur char
 } File;
 
 /**
@@ -128,7 +128,7 @@ void swap_ptrs(void **first, void **second);
     \param[in] first,second prts to swap
     \return
 */
-void Char_get_next_symb(const unsigned char **c);
+void Char_get_next_symb(unsigned char **c);
 
 char Char_in_string(const unsigned char c, const unsigned char *str);
 

@@ -7,8 +7,8 @@ endif
 CUR_PROG = detree
 
 GENERAL_PREFIX = general
-GC = $(GENERAL_PREFIX)/general_c
-GCPP = $(GENERAL_PREFIX)/general_cpp
+GC = $(GENERAL_PREFIX)/c
+GCPP = $(GENERAL_PREFIX)/cpp
 
 CC = gcc
 CPP = g++
@@ -19,7 +19,7 @@ CFLAGS = $(STANDARD) $(WARNINGS) -lm
 
 all: detree
 
-detree: main.cpp gc_strings_and_files.o decision_tree.h $(GCPP)/string.h
+detree: main.cpp gc_strings_and_files.o decision_tree.h $(GCPP)/string.hpp $(GCPP)/stringview.hpp $(GCPP)/vector.hpp
 	$(CPP) $(CFLAGS) main.cpp gc_strings_and_files.o -g -o detree
 
 gc_strings_and_files.o: $(GC)/strings_and_files.c $(GC)/strings_and_files.h

@@ -20,6 +20,9 @@ private:
 	}
 
 public:
+	Vector           (const Vector& other) = delete;
+	Vector& operator=(const Vector& other) = delete;
+
 	Vector() :
 	buffer(nullptr),
 	cur_size(0),
