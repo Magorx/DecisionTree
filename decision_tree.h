@@ -775,7 +775,7 @@ public:
 		printf("| [1] - play a guessing game                          |  \n");
 		printf("| [2] - get a definition of an object                 |  \n");
 		printf("| [3] - get a difference between two objects          |  \n");
-		printf("| [4] - make a pretty dump                            |  \n");
+		printf("| [g] - make a pretty dump                            |  \n");
 		printf("| [v] - change verbosity for festival, currently: %s  |  \n", festival_verbosity ? "on" : "of");
 		printf("| [m] - merge 'db1.db' with 'db2.db' into 'db_out.db' |  \n");
 		printf("+-----------------------------------------------------+  \n");
@@ -808,7 +808,7 @@ public:
 					run_difference();
 					break;
 				}
-				case '4': {
+				case 'g': {
 					graphviz_dump("akidump", "svg");
 					break;
 				}
