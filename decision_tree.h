@@ -82,7 +82,9 @@ public:
 		node_false = node_false_;
 	}
 
-	static DecisionTreeNode *NEW(StringView *statement_, DecisionTreeNode  *node_true_  = nullptr, DecisionTreeNode *node_false_ = nullptr) {
+	static DecisionTreeNode *NEW(StringView *statement_, 
+								 DecisionTreeNode  *node_true_  = nullptr,
+								 DecisionTreeNode *node_false_ = nullptr) {
 		DecisionTreeNode *cake = (DecisionTreeNode*) calloc(1, sizeof(DecisionTreeNode));
 		if (!cake) {
 			return nullptr;
@@ -783,13 +785,12 @@ public:
 	int run_interaction() {
 		while (true) {
 			check_and_fix_overburdance();
-			reload("rld.db", true);
 			print_interface();
 			printf("> ");
-			char answer;
-			scanf("%c", &answer);
+			char answer[100];
+			scanf("%s", answer);
 
-			switch (answer) {
+			switch (answer[0]) {
 				case 'q': {
 					return 0;
 				}
@@ -828,6 +829,7 @@ public:
 				}
 				default: {
 					printf("Make a simple choice, human!\n");
+					FESTIVAL_SAY("Make a simple choice, human!");
 					break;
 				}
 			}

@@ -13,8 +13,8 @@ private:
 	bool own_buffer;
 
 public:
-	StringView           (const StringView& other) = delete;
-	StringView& operator=(const StringView& other) = delete;
+	StringView            (const StringView& other) = delete;
+	StringView& operator= (const StringView& other) = delete;
 
 	StringView() :
 	buffer(nullptr),
@@ -144,7 +144,6 @@ public:
 		if (sidx < 0 && eidx < 0) {
 			char format[24]; // to simulate the certain lenth of out stringview
 			sprintf(format, "%%.%lus", size);
-			//printf("LENGTH = %s\n", format);
 			fprintf(file_ptr, format, buffer);
 		} else {
 			for (int i = sidx; !(i >= (int) size || (eidx >= 0 && i < eidx)); ++i) {
