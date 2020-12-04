@@ -29,7 +29,7 @@ enum GUESS_GAME_OUTCOMES {
 class DecisionTreeNode {
 private:
 // data =======================================================================
-	StringView           *statement;
+	StringView   *statement;
 	DecisionTreeNode *node_true;
 	DecisionTreeNode *node_false;
 // meth =======================================================================
@@ -58,7 +58,7 @@ public:
 	statement(nullptr),
 	node_true(nullptr),
 	node_false(nullptr)
-	{} 
+	{}
 	
 	void ctor() {
 		statement  = nullptr;
@@ -222,7 +222,7 @@ private:
 //=============================================================================
 // meth =======================================================================
 
-	#define FESTIVAL_SAY(string) if (festival_verbosity) system("echo " string " | festival --tts");;
+	#define FESTIVAL_SAY(string) if (festival_verbosity) system("echo " string " | festival --tts");
 
 	DecisionTreeNode *load_node(File *file) {
 		unsigned char *c = file->cc;
@@ -299,39 +299,64 @@ private:
 		return 0;
 	}
 
-	bool node_find_definition_way(const StringView &definition, const DecisionTreeNode *cur_node, Vector<char> *buffer) {
-		if (cur_node->is_question()) {
-			buffer->push_back(1);
-			if (node_find_definition_way(definition, cur_node->get_node_true(), buffer)) {
-				return buffer;
-			} else {
+	bool node_find_definition_way(const StringView &definition, const DecisionTreeNode *cur_node, Vector<char> *buffer) { //todo: itterations
+		Vector<const DecisionTreeNode*> stack = {};
+		stack.ctor();
+		Vector<char> stack_tf = {};
+		stack_tf.ctor();
+
+		stack.push_back(cur_node);
+		stack_tf.push_back(1);
+
+		bool first_remove_flag = true;
+
+		while (stack.size()) {
+			const DecisionTreeNode *cur = stack[stack.size() - 1];
+			buffer->push_back(stack_tf[stack_tf.size() - 1]);
+
+			if (first_remove_flag) {
+				first_remove_flag = false;
 				buffer->pop_back();
 			}
 
-			buffer->push_back(0);
-			if (node_find_definition_way(definition, cur_node->get_node_false(), buffer)) {
-				return buffer;
+			stack.pop_back();
+			stack_tf.pop_back();
+
+			if (cur->is_question()) {
+				stack.push_back(cur->get_node_false());
+				stack_tf.push_back(0);
+
+				stack.push_back(cur->get_node_true());
+				stack_tf.push_back(1);
+
 			} else {
-				buffer->pop_back();
-			}
-		} else {
-			if (cur_node->get_statement() == definition) {
-				return true;
+				if (cur->get_statement() == definition) {
+					// for (int i = 0; i < buffer->size(); ++i) {
+					// 	printf("%d ", (*buffer)[i]);
+					// }
+					// printf("\n");
+					return true;
+				} else {
+					while (!(*buffer)[buffer->size() - 1]) {
+						buffer->pop_back();
+					}
+					buffer->pop_back();
+				}
 			}
 		}
 
 		return false;
 	}
 
-	Vector<char> *find_definition_way(const StringView &definition) {
-		Vector<char> *buffer = Vector<char>::NEW();
+	void find_definition_way(const StringView &definition, Vector<char> *buffer) {
 		node_find_definition_way(definition, root, buffer);
-		return buffer;
 	}
 
 	int print_definition(const StringView &definition) {
-		Vector<char> *way = find_definition_way(definition);
-		if (way->size() == 0) {
+		Vector<char> way = {};
+		way.ctor();
+		find_definition_way(definition, &way);
+		if (way.size() == 0) {
 			printf("What the hell even is it?\n");
 			festival_no_such_object();
 			return 0;
@@ -339,9 +364,9 @@ private:
 
 		definition.print();
 		printf(" ");
-		print_definition_by_way(*way);
+		print_definition_by_way(way);
 
-		Vector<char>::DELETE(way);
+		way.dtor();
 		return 0;
 	}
 
@@ -675,7 +700,7 @@ public:
 		FESTIVAL_SAY("What object do you want me to define?");
 		char str[MAX_STATEMENT_LEN];
 		scanf("%[^\n]%*c", str);
-		StringView defenition;
+		StringView defenition = {};
 		defenition.ctor(str);
 
 		festival_read_it_yourself();
@@ -691,45 +716,52 @@ public:
 	int run_difference() {
 		printf("What object do you want me to compare?\n> ");
 		FESTIVAL_SAY("What object do you want me to compare?");
-		char c_first[MAX_STATEMENT_LEN];
+
+		char c_first[MAX_STATEMENT_LEN] = "";
 		scanf("%[^\n]%*c", c_first);
-		StringView first;
+		StringView first = {};
 		first.ctor(c_first);
 
 		printf("What should I compare it with?\n> ");
 		FESTIVAL_SAY("What should I compare it with?");
-		char c_second[MAX_STATEMENT_LEN];
+
+		char c_second[MAX_STATEMENT_LEN] = "";
 		scanf("%[^\n]%*c", c_second);
-		StringView second;
+		StringView second = {};
 		second.ctor(c_second);
 
 		printf("\n");
 
-		if (first == second) {
+		if (first == second) { //todo: first.compare(second) <=>
 			printf("They are just the same, pathetic human...\n");
 			FESTIVAL_SAY("They are just the same, pathetic human...");
 			return 0;
 		}
 
-		Vector<char> *way_first  = find_definition_way(first );
-		Vector<char> *way_second = find_definition_way(second);
+		Vector<char> way_first = {}; //todo: "= {}" everywhere;
+		way_first.ctor();
+		find_definition_way(first, &way_first);
 
-		if (!way_first->size()) {
+		Vector<char> way_second = {};
+		way_second.ctor();
+		find_definition_way(second, &way_second);
+
+		if (!way_first.size()) {
 			printf("What the hell even is it?\n");
 			festival_no_such_object();
 			return 0;
 		}
 
-		if (!way_second->size()) {
+		if (!way_second.size()) {
 			printf("What the hell even is it?\n");
 			festival_no_such_object();
 			return 0;
 		}
 
 		int common_part = 0;
-		for (; common_part < (int) way_first ->size()  && 
-			   common_part < (int) way_second->size() &&
-			   (*way_first)[common_part] == (*way_second)[common_part]; ++common_part);
+		for (; common_part < (int) way_first.size()  && 
+			   common_part < (int) way_second.size() &&
+			   way_first[common_part] == way_second[common_part]; ++common_part);
 		if (common_part == 0) {
 			printf("They are so different...\n");
 			FESTIVAL_SAY("They are so different...");
@@ -737,7 +769,7 @@ public:
 			festival_read_it_yourself();
 			first.print();
 			printf(" ");
-			print_definition_by_way(*way_first, 0, common_part);
+			print_definition_by_way(way_first, 0, common_part);
 			printf(" and so is ");
 			second.print();
 
@@ -751,24 +783,33 @@ public:
 
 		first.print();
 		printf(" ");
-		print_definition_by_way(*way_first, common_part);
+		print_definition_by_way(way_first, common_part);
 
 		printf("\nWhile\n");
 
 		second.print();
 		printf(" ");
-		print_definition_by_way(*way_second, common_part);
+		print_definition_by_way(way_second, common_part);
 		printf("\n");
 
 		first.dtor();
 		second.dtor();
-		Vector<char>::DELETE(way_first);
-		Vector<char>::DELETE(way_second);
+		way_first.dtor();
+		way_second.dtor();
 
 		return 0;
 	}
 
+	void print_print() {
+		printf("                  `*   `   `    `  ` * `                \n");
+		printf("                `  `\\`  `  __^__    /`  `                  \n");
+		printf("                 *~~o    \\(9-o-9)/  o~~*                     \n");
+		printf("                 ` `/   `  [ ~ ] ` \\ `                   \n");
+		printf("                  `*     `  | |`    *`  `              \n");
+	}
+
 	void print_interface() {
+		print_print();
 		printf("+-------------------+-----------+---------------------+  \n");
 		printf("|                 <~| DeTreeser |~>                   |  \n");
 		printf("+-------------------+-----------+---------------------+  \n");
@@ -777,7 +818,7 @@ public:
 		printf("| [2] - get a definition of an object                 |  \n");
 		printf("| [3] - get a difference between two objects          |  \n");
 		printf("| [g] - make a pretty dump                            |  \n");
-		printf("| [v] - change verbosity for festival, currently: %s  |  \n", festival_verbosity ? "on" : "of");
+		printf("| [v] - change verbosity of festival, currently: %s   |  \n", festival_verbosity ? "on" : "of");
 		printf("| [m] - merge 'db1.db' with 'db2.db' into 'db_out.db' |  \n");
 		printf("+-----------------------------------------------------+  \n");
 	}

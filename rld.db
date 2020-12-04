@@ -87,7 +87,12 @@
 
                         "is one of the oldest buildings"
                         [
-                            "Laboratory Building"
+                            "is double-floored"
+                            [
+                                "RT-corpus"
+
+                                "Laboratory Building"
+                            ]
 
                             "does allow you to sTudI EaNgLiSh"
                             [
