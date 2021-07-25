@@ -170,6 +170,10 @@ public:
 
 		return true;
 	}
+
+	bool equal(const StringView &other) const {
+		return (*this) == other;
+	}
 };
 
 #endif // GENERAL_STRINGVIEW

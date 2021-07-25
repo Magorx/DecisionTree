@@ -330,11 +330,7 @@ private:
 				stack_tf.push_back(1);
 
 			} else {
-				if (cur->get_statement() == definition) {
-					// for (int i = 0; i < buffer->size(); ++i) {
-					// 	printf("%d ", (*buffer)[i]);
-					// }
-					// printf("\n");
+				if (cur->get_statement().equal(definition)) {
 					return true;
 				} else {
 					while (!(*buffer)[buffer->size() - 1]) {
@@ -481,7 +477,7 @@ private:
 
 	DecisionTreeNode *merge_node(DecisionTreeNode *first, DecisionTreeNode *second) {
 		if (first->is_question() && second->is_question()) {
-			if (first->get_statement() == second->get_statement()) {
+			if (first->get_statement().equal(second->get_statement())) {
 				first->set_true (merge_node(first->get_node_true (), second->get_node_true ()));
 				first->set_false(merge_node(first->get_node_false(), second->get_node_false()));
 			} else {
@@ -732,13 +728,13 @@ public:
 
 		printf("\n");
 
-		if (first == second) { //todo: first.compare(second) <=>
+		if (first.equal(second)) {
 			printf("They are just the same, pathetic human...\n");
 			FESTIVAL_SAY("They are just the same, pathetic human...");
 			return 0;
 		}
 
-		Vector<char> way_first = {}; //todo: "= {}" everywhere;
+		Vector<char> way_first = {};
 		way_first.ctor();
 		find_definition_way(first, &way_first);
 
